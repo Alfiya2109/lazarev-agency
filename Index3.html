@@ -1,0 +1,476 @@
+<link rel="stylesheet" href="#appResource.Tabulator_min.css#">
+<script src="#appResource.Tabulator_min.js#"></script>
+
+<script src="https://d3js.org/d3-dsv.v2.min.js"></script>
+<script src=" https://cdn.jsdelivr.net/npm/luxon@3.3.0/build/global/luxon.min.js "></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+<script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
+<script src="https://npmcdn.com/flatpickr/dist/flatpickr.min.js"></script>
+<script src="https://npmcdn.com/flatpickr/dist/l10n/ja.js"></script>
+
+
+<link rel="stylesheet" type="text/css" href="https://npmcdn.com/flatpickr/dist/themes/airbnb.css">
+
+
+<script>
+
+  const fi_posting_gl_master_select_field = document.getElementsByName("fi_posting_gl_master_select")[0]
+  const fi_posting_customer_master_select_field = document.getElementsByName("fi_posting_customer_master_select")[0]
+  const fi_posting_supplier_master_select_field = document.getElementsByName("fi_posting_supplier_master_select")[0]
+  const fi_posting_gl_master_select_flag_field = document.getElementsByName("fi_posting_gl_master_select_flag")[0]
+  const sap_profit_center_master = document.getElementsByName("sap_profit_center_master")[0]
+  const sap_cost_center_master = document.getElementsByName("sap_cost_center_master")[0]
+  const sap_tax_code_master = document.getElementsByName("sap_tax_code_master")[0]
+  const sap_payment_method_master = document.getElementsByName("sap_payment_method_master")[0]
+  const sap_bank_code_master = document.getElementsByName("sap_bank_code_master")[0]
+  const sap_reason_code_master = document.getElementsByName("sap_reason_code_master")[0]
+  const sap_withholding_tax_master = document.getElementsByName("sap_withholding_tax_master")[0]
+  const list_slip_items_field = document.getElementById("list_slip_items")
+  
+  const sap_business_area_master = document.getElementsByName("sap_fi_posting_businessarea_master")[0];
+
+  var duplicateIcon = function (cell, formatterParams, onRendered) {
+      return `<svg version="1.0" xmlns="http://www.w3.org/2000/svg"
+         width="12pt" height="12pt" viewBox="0 0 2263.000000 2771.000000"
+         preserveAspectRatio="xMidYMid meet">
+        
+        <g transform="translate(0.000000,2771.000000) scale(0.100000,-0.100000)"
+        fill="#000000" stroke="none">
+        <path d="M6900 27695 c-299 -50 -550 -183 -760 -401 -184 -191 -288 -387 -356
+        -674 -17 -70 -18 -174 -21 -1582 l-4 -1508 971 0 970 0 0 1120 0 1120 4075 0
+        4075 0 0 -2420 0 -2420 2420 0 2420 0 0 -6675 0 -6675 -1180 0 -1180 0 0 -970
+        0 -970 1521 0 c1703 0 1632 -3 1854 71 210 70 358 162 521 324 201 200 307
+        394 380 695 18 72 19 380 21 8076 l3 8001 -2482 2452 -2483 2451 -5345 -1
+        c-4263 -1 -5360 -4 -5420 -14z m11875 -3845 l980 -980 -983 0 -982 0 0 980 c0
+        539 1 980 3 980 1 0 443 -441 982 -980z"/>
+        <path d="M1135 22054 c-277 -46 -517 -169 -722 -367 -203 -197 -327 -421 -389
+        -708 -18 -82 -19 -376 -19 -9944 0 -9578 1 -9862 19 -9945 63 -288 191 -518
+        399 -717 183 -175 375 -277 647 -346 l85 -22 7225 -3 c6550 -2 7235 -1 7334
+        13 290 42 544 172 756 384 195 196 306 400 374 686 l21 90 2 7996 3 7995
+        -2482 2452 -2483 2451 -5345 0 c-4442 -1 -5359 -3 -5425 -15z m8945 -4344 l0
+        -2420 2425 0 2425 0 0 -6675 0 -6675 -6495 0 -6495 0 0 9095 0 9095 4070 0
+        4070 0 0 -2420z m2935 500 l980 -980 -983 0 -982 0 0 980 c0 539 1 980 3 980
+        1 0 443 -441 982 -980z"/>
+        </g>
+        </svg>`;
+    };
+
+  const dictionnary = {
+    "skander_bennia": "",
+    "koda-jera": "",
+    "oussama_chatti": "",
+    "walid": "",
+    "marouen_hamdoun": "",
+    "nourelhouda_boumenjel": "",
+    "Wael.ben.miloud": ""
+  }
+
+  var comments = [
+    {
+      label: "",
+      value: "",
+      elementAttributes: {
+        style: "padding:15px;",
+      }
+    },
+    "【郵便料金特例】",
+    "【入場券特例】",
+    "【自販機特例】",
+    "【コインロッカー特例】",
+    "【交通費特例】",
+    "【通勤手当特例】",
+    "【旅費日当等特例】",
+    "【立替金精算（非登録）】"
+  ];
+
+
+  const composeSelectFormatter = (invalidArray, dictionary, Fieldlength) => {
+    return (cell) => {
+      let value = cell.getValue();
+      const parentRow = cell.getRow();
+      const postingKey = parentRow.getData().c_Y_BSCHL;
+
+      if (value && (cell.getField() === "c_Y_WRBTR2" || cell.getField() === "c_Y_WRBTR1")) {
+        value = Number(value).toLocaleString();
+      }
+
+      if (invalidArray.includes(postingKey)) {
+        if (!value || !dictionary) {
+          cell.getElement().classList.add("invalid");
+        }else if(Fieldlength < value.length){
+          cell.getElement().classList.add("invalid");
+        } else {
+          cell.getElement().classList.remove("invalid");
+        }
+      }
+      return value;
+    };
+  };
+
+
+  var readonlyFunction = (readonlyArray) => {
+    return (cell) => {
+      const value = cell.getValue();
+      const parentRow = cell.getRow();
+      const postingKey = parentRow.getData().c_Y_BSCHL;
+      const currentTable = cell.getTable();
+      let rowindex = currentTable.getRows().indexOf(parentRow);
+
+      if (readonlyArray.includes(postingKey) && postingKey) {
+        cell.getElement().classList.remove("invalid")
+        cell.getElement().style.backgroundColor = "lightgrey"
+        cell.getElement().style.border = "1px solid #aaa"
+        cell.setValue("")
+      } else {
+        cell.getElement().style.backgroundColor = "transparent"
+      }
+
+      // if (cell.getField() == 'c_Y_WRBTR1' || cell.getField() == 'c_Y_WRBTR2') {
+      //   return false;
+      // }
+
+       return (!readonlyArray.includes(postingKey) || !postingKey) && !(rowindex == 0 && (cell.getField() == 'c_Y_WRBTR1' || cell.getField() == 'c_Y_WRBTR2'));
+    }
+  }
+
+  var paymentMethodFormatter = (invalidArray, dictionary) => {
+    return (cell) => {
+      let value = cell.getValue();
+      const parentRow = cell.getRow()
+      const postingKey = parentRow.getData().c_Y_BSCHL
+      if (!value && invalidArray.includes(postingKey)) { cell.getElement().classList.add("invalid") }
+      else {
+        cell.getElement().classList.remove("invalid")
+      }
+      return value ? value + " " + dictionary[value] : "";
+    }
+  }
+
+  // Functio to formate value by commas
+
+  var commasFormatter = () => {
+    return (cell) => {
+      let value = cell.getValue();
+      if (value) {
+        const [integerPart, decimalPart] = String(value).split('.');
+        const integerWithCommas = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+        if (decimalPart) {
+          return `${integerWithCommas}.${decimalPart}`;
+        }
+
+        return integerWithCommas;
+
+      }
+    }
+  }
+
+
+  // $("#amount_of_money").on('input change', function(){
+  //     let amount_value = $(this).val() || 0;
+  //     if(!numberValidatorAmounts({value: amount_value })){
+  //       $(this)[0].classList.add("invalid");
+  //     }else{
+  //       $(this)[0].classList.remove("invalid");
+  //     }
+  // });
+
+
+  function numberValidator(cell, value) {
+    if (!hasHalfWidthNumbers(value) && value != '') return false;
+    const [wholeNumber, decimalPart = ""] = String(value).split(".");
+    return wholeNumber.length <= 13 && decimalPart.length <= 2;
+  }
+
+  function numberValidatorAmounts(cell, value) {
+    //console.log("numberValidatorAmounts is working")
+    //console.log({ value: value})
+    if (!hasHalfWidthNumbers(value) && value != '') return false;
+
+    const [wholeNumber, decimalPart = ""] = String(value).split(".");
+
+    //console.log({ wholeNumber: wholeNumber, decimalPart: decimalPart });
+
+    if (decimalPart == "" && wholeNumber.length > 13) return false;
+    if (decimalPart != "" && wholeNumber.length > 11) return false;
+
+    //console.log({ decimalPart: decimalPart.length <= 2 })
+    return decimalPart.length <= 2;
+  }
+
+  function numberValidator_extra(cell, value) {
+    if (!hasHalfWidthNumbers(value) && value != '') return false;
+
+    const [wholeNumber, decimalPart = ""] = String(value).split(".");
+
+    return wholeNumber.length <= 19 && decimalPart.length <= 4;
+  }
+
+
+  function hasHalfWidthNumbers(text) {
+    for (let i = 0; i < text.length; i++) {
+      const charCode = text.charCodeAt(i);
+      if ((charCode < 48 || charCode > 57) && (charCode != 46)) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+
+  const dict = Array.from(fi_posting_gl_master_select_field.options).concat(Array.from(fi_posting_customer_master_select_field.options)).concat(Array.from(fi_posting_supplier_master_select_field.options)).map(option => {
+    const item = JSON.parse(option.value)
+    const emptyItem = {}
+    emptyItem["name"] = item.gl_account_code || item.customer_code || item.supplier_code
+    emptyItem["value"] = item.gl_account_name || item.customer_name || item.supplier_name
+    return emptyItem
+  }).reduce(function (obj, item) {
+    obj[item.name] = item.value;
+    return obj;
+  }, {});
+
+  const GetProfitCenterandCostCenterName = Array.from(sap_profit_center_master.options).concat(Array.from(sap_cost_center_master.options)).map(option => {
+      const item = JSON.parse(option.value)
+      const emptyItem = {}
+      emptyItem["name"] = item.cost_center || item.profit_center
+      emptyItem["value"] = item.cost_center_name || item.profit_center_name
+      return emptyItem
+    }).reduce(function (obj, item) {
+      obj[item.name] = item.value;
+      return obj;
+    }, {});
+
+    const sap_business_area_master_dict = Array.from(sap_business_area_master.options).map(option => {
+        const item = JSON.parse(option.value)
+        const emptyItem = {}
+        emptyItem["name"] = item.business_area
+        emptyItem["value"] = item.business_area_name
+        return emptyItem
+      }).reduce(function (obj, item) {
+        obj[item.name] = item.value;
+        return obj;
+      }, {});
+
+  const payment_method_dict = Array.from(sap_payment_method_master.options).map(option => {
+    const item = JSON.parse(option.value)
+    const emptyItem = {}
+    emptyItem["name"] = item.payment_meth_code
+    emptyItem["value"] = item.payment_meth_name_only
+    return emptyItem
+  }).reduce(function (obj, item) {
+    obj[item.name] = item.value;
+    return obj;
+  }, {});
+  
+  
+   var customDateEditor = function (cell, onRendered, success, cancel, editorParams) {
+      var cellValue = cell.getValue();
+      var input = document.createElement("input");
+      input.type = "date";
+      if (cell.getValue()) {
+        input.value = luxon.DateTime.fromFormat(cell.getValue(), "yyyy/MM/dd").toFormat("yyyy-MM-dd")
+      }
+      input.style.maxWidth = "95%";
+
+      // Comment starts here
+      flatpickr(input, {
+        onClose: function (selectedDates, dateStr, instance) {
+          success(dateStr)
+        },
+        dateFormat: "Y/m/d",
+        minDate: "2023/01/01",
+        maxDate: "2099/12/31",
+        "disable": [
+          function (date) {
+            const postingKey = cell.getRow().getData().c_Y_BSCHL;
+            if (['21', '31'].includes(postingKey)) {
+              return (date.getDay() === 0 || date.getDay() === 6);  // disable weekends for '21' and '31'
+            } else if (['01', '11', '40', '50'].includes(postingKey)) {
+              return false;  // allow weekends for '01', '11', '40', and '50'
+            }
+            return (date.getDay() === 0 || date.getDay() === 6);  // disable weekends for other posting keys
+          }
+        ],
+        locale: {
+            "firstDayOfWeek": 1,
+            "rangeSeparator": " から ",
+            "weekdays": {
+              "shorthand": ["日", "月", "火", "水", "木", "金", "土"],
+              "longhand": [
+                "日曜日",
+                "月曜日",
+                "火曜日",
+                "水曜日",
+                "木曜日",
+                "金曜日",
+                "土曜日"
+              ]
+            },
+            "months": {
+              "shorthand": [
+                "1月",
+                "2月",
+                "3月",
+                "4月",
+                "5月",
+                "6月",
+                "7月",
+                "8月",
+                "9月",
+                "10月",
+                "11月",
+                "12月"
+              ],
+            "longhand": [
+                    "1月",
+                    "2月",
+                    "3月",
+                    "4月",
+                    "5月",
+                    "6月",
+                    "7月",
+                    "8月",
+                    "9月",
+                    "10月",
+                    "11月",
+                    "12月"
+                  ]
+            }
+      }
+      });
+      // Comment ends here
+
+      cell.onFocus = function () {
+        input.click()
+      }
+      onRendered(function () {
+        input.focus();
+        input.click()
+      })
+
+      return input;
+    };
+
+
+
+
+  var customDateEditor_trn = function (cell, onRendered, success, cancel, editorParams) {
+     // console.log("hello");
+    var cellValue = cell.getValue();
+    var input = document.createElement("input");
+    input.type = "date";
+    if (cell.getValue()) {
+      input.value = luxon.DateTime.fromFormat(cell.getValue(), "yyyy/MM/dd").toFormat("yyyy-MM-dd")
+    }
+    input.style.maxWidth = "95%";
+// Added By Prachi 2024/06/19
+var minDate= "2023/01/01";
+var maxDate = "2099/12/31";
+
+var rowIndex = cell.getRow().getPosition();
+var previousDate = null;
+var nextDate = null;
+
+   if (rowIndex > 1) {
+      var previousRow = cell.getTable().getRowFromPosition(rowIndex - 1);
+      var previousDateStr = previousRow.getCell("transfer_plan_posting_date").getValue();
+    if (previousDateStr) {
+        var previousDateObj = new Date(previousDateStr.split('/').join('-'));
+        previousDateObj.setDate(previousDateObj.getDate() - 1);  // Subtract one day
+        previousDate = previousDateObj;
+      }
+    }
+
+    // Get the next row's date
+    var totalRows = cell.getTable().getDataCount();
+    if (rowIndex < totalRows) {
+      var nextRow = cell.getTable().getRowFromPosition(rowIndex + 1);
+      var nextDateStr = nextRow.getCell("transfer_plan_posting_date").getValue();
+      if (nextDateStr) {
+        nextDate = new Date(nextDateStr.split('/').join('-'));
+      }
+    } 
+
+// Add an event listener to capture the value when it change
+    flatpickr(input, {
+      onClose: function (selectedDates, dateStr, instance) {
+        success(dateStr);
+      },
+      
+      dateFormat: "Y/m/d",
+      minDate: minDate,
+      maxDate: maxDate,
+   
+    // Added By Prachi 2024/06/19
+       disable: [
+        function (date) {
+          if (previousDate && nextDate) {
+            return date <= previousDate || date >= nextDate;
+          } else if (previousDate) {
+            return date <= previousDate;
+          } else if (nextDate) {
+            return date >= nextDate;
+          }
+          return false;
+        }
+      ],
+      locale: {
+    "firstDayOfWeek": 1,
+    "rangeSeparator": " から ",
+    "weekdays": {
+      "shorthand": ["日", "月", "火", "水", "木", "金", "土"],
+      "longhand": [
+        "日曜日",
+        "月曜日",
+        "火曜日",
+        "水曜日",
+        "木曜日",
+        "金曜日",
+        "土曜日"
+      ]
+    },
+    "months": {
+      "shorthand": [
+        "1月",
+        "2月",
+        "3月",
+        "4月",
+        "5月",
+        "6月",
+        "7月",
+        "8月",
+        "9月",
+        "10月",
+        "11月",
+        "12月"
+      ],
+      "longhand": [
+        "1月",
+        "2月",
+        "3月",
+        "4月",
+        "5月",
+        "6月",
+        "7月",
+        "8月",
+        "9月",
+        "10月",
+        "11月",
+        "12月"
+      ]
+    }
+      }
+    });
+  
+    
+    cell.onFocus = function () {
+      input.click()
+    }
+    onRendered(function () {
+      input.focus();
+      input.click()
+    })
+
+    return input;
+  };
+</script>
